@@ -70,10 +70,23 @@ class Database {
           partner_name VARCHAR(255) NOT NULL,
           type ENUM('invest', 'withdraw') NOT NULL,
           amount DECIMAL(10,2) NOT NULL,
+          notes TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (partner_id) REFERENCES partners (id)
         )
       `);
+
+      // Add notes column to existing investments table if it doesn't exist
+      try {
+        await this.db.execute(`
+          ALTER TABLE investments ADD COLUMN notes TEXT
+        `);
+      } catch (err) {
+        // Column already exists, ignore error
+        if (!err.message.includes('Duplicate column name')) {
+          console.log('Note: investments table notes column may already exist');
+        }
+      }
 
       // Inventory table
       await this.db.execute(`

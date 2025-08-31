@@ -71,7 +71,7 @@ router.get('/partner/:partnerId', async (req, res) => {
 
 // Create new investment/withdrawal
 router.post('/', async (req, res) => {
-  const { partner_id, type, amount } = req.body;
+  const { partner_id, type, amount, notes } = req.body;
   
   if (!partner_id || !type || !amount) {
     res.status(400).json({ error: 'Partner ID, type, and amount are required' });
@@ -99,14 +99,14 @@ router.post('/', async (req, res) => {
       return;
     }
     
-    const sql = 'INSERT INTO investments (partner_id, partner_name, type, amount) VALUES (?, ?, ?, ?)';
+    const sql = 'INSERT INTO investments (partner_id, partner_name, type, amount, notes) VALUES (?, ?, ?, ?, ?)';
     
-    const [result] = await db.execute(sql, [partner_id, partner.name, type, amount]);
+    const [result] = await db.execute(sql, [partner_id, partner.name, type, amount, notes || null]);
     const id = result.insertId;
     
     res.status(201).json({
       message: 'Investment record created successfully',
-      investment: { id, partner_id, partner_name: partner.name, type, amount }
+      investment: { id, partner_id, partner_name: partner.name, type, amount, notes }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -115,7 +115,7 @@ router.post('/', async (req, res) => {
 
 // Update investment
 router.put('/:id', async (req, res) => {
-  const { partner_id, type, amount } = req.body;
+  const { partner_id, type, amount, notes } = req.body;
   
   if (!partner_id || !type || !amount) {
     res.status(400).json({ error: 'Partner ID, type, and amount are required' });
@@ -143,9 +143,9 @@ router.put('/:id', async (req, res) => {
       return;
     }
     
-    const sql = 'UPDATE investments SET partner_id = ?, partner_name = ?, type = ?, amount = ? WHERE id = ?';
+    const sql = 'UPDATE investments SET partner_id = ?, partner_name = ?, type = ?, amount = ?, notes = ? WHERE id = ?';
     
-    const [result] = await db.execute(sql, [partner_id, partner.name, type, amount, req.params.id]);
+    const [result] = await db.execute(sql, [partner_id, partner.name, type, amount, notes || null, req.params.id]);
     
     if (result.affectedRows === 0) {
       res.status(404).json({ error: 'Investment not found' });

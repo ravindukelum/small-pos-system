@@ -20,6 +20,7 @@ export default function Investments() {
     partner_id: '',
     type: 'invest',
     amount: '',
+    notes: '',
   });
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function Investments() {
       }
       setShowModal(false);
       setEditingInvestment(null);
-      setFormData({ partner_id: '', type: 'invest', amount: '' });
+      setFormData({ partner_id: '', type: 'invest', amount: '', notes: '' });
       fetchData();
     } catch (error) {
       toast.error(editingInvestment ? 'Failed to update investment' : 'Failed to record investment');
@@ -74,6 +75,7 @@ export default function Investments() {
       partner_id: investment.partner_id,
       type: investment.type,
       amount: investment.amount.toString(),
+      notes: investment.notes || '',
     });
     setShowModal(true);
   };
@@ -92,7 +94,7 @@ export default function Investments() {
   };
 
   const resetForm = () => {
-    setFormData({ partner_id: '', type: 'invest', amount: '' });
+    setFormData({ partner_id: '', type: 'invest', amount: '', notes: '' });
     setEditingInvestment(null);
     setShowModal(false);
   };
@@ -257,6 +259,11 @@ export default function Investments() {
                       <p className="text-sm text-gray-500">
                         Amount: RS {parseFloat(investment.amount).toLocaleString()}
                       </p>
+                      {investment.notes && (
+                        <p className="text-sm text-gray-600 italic">
+                          Note: {investment.notes}
+                        </p>
+                      )}
                       <p className="text-xs text-gray-400">
                         {new Date(investment.created_at).toLocaleDateString()}
                       </p>
@@ -337,6 +344,18 @@ export default function Investments() {
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Enter amount"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Notes
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Add any notes or comments (optional)"
                   />
                 </div>
                 <div className="flex justify-end space-x-3 pt-4">
