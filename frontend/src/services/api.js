@@ -86,4 +86,10 @@ export const dashboardAPI = {
   getLowStockAlerts: (threshold = 5) => api.get(`/dashboard/low-stock-alerts?threshold=${threshold}`),
 };
 
+// Settings API
+export const settingsAPI = {
+  getSettings: () => api.get('/settings'),
+  updateSettings: (data) => api.put('/settings', data),
+};
+
 export default api;

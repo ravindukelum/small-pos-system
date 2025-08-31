@@ -6,6 +6,7 @@ import {
   CurrencyDollarIcon,
   CubeIcon,
   ShoppingCartIcon,
+  CogIcon,
   Bars3Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
@@ -16,6 +17,7 @@ const navigation = [
   { name: 'Investments', href: '/investments', icon: CurrencyDollarIcon },
   { name: 'Inventory', href: '/inventory', icon: CubeIcon },
   { name: 'Sales', href: '/sales', icon: ShoppingCartIcon },
+  { name: 'Settings', href: '/settings', icon: CogIcon },
 ];
 
 function classNames(...classes) {

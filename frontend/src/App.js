@@ -7,6 +7,7 @@ import Partners from './pages/Partners';
 import Investments from './pages/Investments';
 import Inventory from './pages/Inventory';
 import Sales from './pages/Sales';
+import Settings from './pages/Settings';
 import './App.css';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
             <Route path="/investments" element={<Investments />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/sales" element={<Sales />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </Layout>
         <Toaster 

@@ -32,6 +32,7 @@ const investmentRoutes = require('./routes/investments');
 const inventoryRoutes = require('./routes/inventory');
 const salesRoutes = require('./routes/sales');
 const dashboardRoutes = require('./routes/dashboard');
+const settingsRoutes = require('./routes/settings');
 
 // Use routes
 app.use('/api/partners', partnerRoutes);
@@ -39,6 +40,7 @@ app.use('/api/investments', investmentRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

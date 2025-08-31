@@ -1,6 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { settingsAPI, salesAPI } from '../services/api';
 
 const PrintInvoice = ({ sale, onClose }) => {
+  const [settings, setSettings] = useState(null);
+  const [saleDetails, setSaleDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch settings
+        const settingsResponse = await settingsAPI.getSettings();
+        setSettings(settingsResponse.data);
+        
+        // Fetch detailed sale information with items
+        const saleResponse = await salesAPI.getById(sale.id);
+        setSaleDetails(saleResponse.data.sale);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Use default settings if API fails
+        setSettings({
+          shopName: 'SMALL POS SYSTEM',
+          shopPhone: '',
+          shopEmail: '',
+          shopAddress: '',
+          currency: 'RS',
+          warrantyPeriod: 30,
+          warrantyTerms: 'Standard warranty terms apply.',
+          receiptFooter: 'Thank you for your business!'
+        });
+        setSaleDetails(sale);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [sale]);
   const handlePrint = () => {
     window.print();
   };
@@ -9,13 +45,19 @@ const PrintInvoice = ({ sale, onClose }) => {
     return new Date(dateString).toLocaleString();
   };
 
-  const calculateTax = () => {
-    const subtotal = parseFloat(sale.total_amount) / (1 + (sale.tax_rate || 0) / 100);
-    return parseFloat(sale.total_amount) - subtotal;
+  const getSubtotal = () => {
+    if (saleDetails?.items && saleDetails.items.length > 0) {
+      return saleDetails.items.reduce((sum, item) => sum + parseFloat(item.line_total), 0);
+    }
+    return parseFloat(sale.subtotal || sale.total_amount) - (sale.discount_amount || 0);
   };
 
-  const getSubtotal = () => {
-    return parseFloat(sale.total_amount) - calculateTax() - (sale.discount_amount || 0);
+  const calculateTax = () => {
+    if (saleDetails?.tax_amount !== undefined) {
+      return parseFloat(saleDetails.tax_amount);
+    }
+    const subtotal = getSubtotal();
+    return subtotal * ((sale.tax_rate || 0) / 100);
   };
 
   return (
@@ -90,12 +132,32 @@ const PrintInvoice = ({ sale, onClose }) => {
           </div>
 
           {/* Print Preview */}
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading settings...</span>
+            </div>
+          ) : (
           <div className="print-area">
             <div className="receipt bg-white p-4 border border-gray-200 rounded">
               {/* Header */}
               <div className="text-center mb-4">
-                <h1 className="text-lg font-bold">SMALL POS SYSTEM</h1>
-                <p className="text-sm">Point of Sale Receipt</p>
+                <h1 className="text-lg font-bold">{settings?.shopName || 'SMALL POS SYSTEM'}</h1>
+                {settings?.shopPhone && (
+                  <p className="text-xs">Phone: {settings.shopPhone}</p>
+                )}
+                {settings?.shopEmail && (
+                  <p className="text-xs">Email: {settings.shopEmail}</p>
+                )}
+                {settings?.shopAddress && (
+                  <p className="text-xs">{settings.shopAddress}</p>
+                )}
+                {(settings?.shopCity || settings?.shopState) && (
+                  <p className="text-xs">
+                    {settings.shopCity}{settings.shopCity && settings.shopState ? ', ' : ''}{settings.shopState}
+                  </p>
+                )}
+                <p className="text-sm mt-1">Point of Sale Receipt</p>
                 <div className="dashed-line border-b border-dashed border-gray-400 my-2"></div>
               </div>
 
@@ -126,11 +188,33 @@ const PrintInvoice = ({ sale, onClose }) => {
               {/* Items */}
               <div className="mb-4">
                 <div className="text-sm font-bold mb-2">ITEMS:</div>
-                {sale.items_summary && (
-                  <div className="text-sm">
-                    <div className="mb-1">{sale.items_summary}</div>
-                    <div className="text-xs text-gray-600">({sale.item_count} item(s))</div>
+
+                {saleDetails?.items && saleDetails.items.length > 0 ? (
+                  <div className="text-xs">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-300">
+                          <th className="text-left py-1 text-xs">Item</th>
+                          <th className="text-center py-1 text-xs">Qty</th>
+                          <th className="text-right py-1 text-xs">Price</th>
+                          <th className="text-right py-1 text-xs">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {saleDetails.items.map((item, index) => (
+                          <tr key={index} className="border-b border-gray-100">
+                            <td className="py-1 text-xs">{item.item_name}</td>
+                            <td className="text-center py-1 text-xs">{item.quantity}</td>
+                            <td className="text-right py-1 text-xs">{settings?.currency || 'RS'} {parseFloat(item.unit_price).toFixed(2)}</td>
+                            <td className="text-right py-1 text-xs">{settings?.currency || 'RS'} {parseFloat(item.line_total).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="text-xs text-gray-600 mt-1">({saleDetails.items.length} item(s))</div>
                   </div>
+                ) : (
+                  <div className="text-xs text-gray-500">No items found</div>
                 )}
               </div>
 
@@ -140,20 +224,20 @@ const PrintInvoice = ({ sale, onClose }) => {
               <div className="text-sm space-y-1">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>RS {getSubtotal().toFixed(2)}</span>
+                  <span>{settings?.currency || 'RS'} {getSubtotal().toFixed(2)}</span>
                 </div>
                 
                 {sale.tax_rate > 0 && (
                   <div className="flex justify-between">
                     <span>Tax ({sale.tax_rate}%):</span>
-                    <span>RS {calculateTax().toFixed(2)}</span>
+                    <span>{settings?.currency || 'RS'} {calculateTax().toFixed(2)}</span>
                   </div>
                 )}
                 
                 {sale.discount_amount > 0 && (
                   <div className="flex justify-between">
                     <span>Discount:</span>
-                    <span>-RS {parseFloat(sale.discount_amount).toFixed(2)}</span>
+                    <span>-{settings?.currency || 'RS'} {parseFloat(sale.discount_amount).toFixed(2)}</span>
                   </div>
                 )}
                 
@@ -161,18 +245,18 @@ const PrintInvoice = ({ sale, onClose }) => {
                 
                 <div className="total-line flex justify-between font-bold text-base">
                   <span>TOTAL:</span>
-                  <span>RS {parseFloat(sale.total_amount).toFixed(2)}</span>
+                  <span>{settings?.currency || 'RS'} {parseFloat(sale.total_amount).toFixed(2)}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span>Paid:</span>
-                  <span>RS {parseFloat(sale.paid_amount).toFixed(2)}</span>
+                  <span>{settings?.currency || 'RS'} {parseFloat(sale.paid_amount).toFixed(2)}</span>
                 </div>
                 
                 <div className="flex justify-between font-bold">
                   <span>Balance:</span>
                   <span className={parseFloat(sale.total_amount) - parseFloat(sale.paid_amount) > 0 ? 'text-red-600' : 'text-green-600'}>
-                    RS {(parseFloat(sale.total_amount) - parseFloat(sale.paid_amount)).toFixed(2)}
+                    {settings?.currency || 'RS'} {(parseFloat(sale.total_amount) - parseFloat(sale.paid_amount)).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -181,12 +265,21 @@ const PrintInvoice = ({ sale, onClose }) => {
 
               {/* Footer */}
               <div className="text-center text-xs text-gray-600">
-                <p>Thank you for your business!</p>
+                <p>{settings?.receiptFooter || 'Thank you for your business!'}</p>
                 <p>Status: {sale.status.toUpperCase()}</p>
-                <p className="mt-2">Powered by Small POS System</p>
+                {settings?.warrantyPeriod && (
+                  <div className="mt-2">
+                    <p>Warranty: {settings.warrantyPeriod} days</p>
+                    {settings.warrantyTerms && (
+                      <p className="text-xs mt-1">{settings.warrantyTerms}</p>
+                    )}
+                  </div>
+                )}
+                <p className="mt-2">Powered by {settings?.shopName || 'Small POS System'}</p>
               </div>
             </div>
           </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-2 mt-4 no-print">
