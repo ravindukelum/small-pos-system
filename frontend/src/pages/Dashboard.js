@@ -70,11 +70,18 @@ export default function Dashboard() {
       subtext: `RS ${(stats?.totalInvestments || 0).toLocaleString()} In, RS ${(stats?.totalWithdrawals || 0).toLocaleString()} Out`,
     },
     {
-      name: 'Inventory Items',
-      value: stats?.totalInventoryItems || 0,
+      name: 'Total Actual Inventory Value',
+      value: `RS ${(stats?.totalInventoryBuyValue || 0).toLocaleString()}`,
       icon: CubeIcon,
       color: 'bg-purple-500',
-      subtext: `${stats?.totalInventoryQuantity || 0} Total Quantity`,
+      subtext: `${stats?.totalInventoryItems || 0} Items, ${stats?.totalInventoryQuantity || 0} Qty`,
+    },
+    {
+      name: 'Total Sell Value',
+      value: `RS ${(stats?.totalInventorySellValue || 0).toLocaleString()}`,
+      icon: CubeIcon,
+      color: 'bg-indigo-500',
+      subtext: `Potential Revenue from Current Stock`,
     },
     {
       name: 'Total Sales',
@@ -83,7 +90,7 @@ export default function Dashboard() {
       color: 'bg-orange-500',
       subtext: `RS ${(stats?.totalRevenue || 0).toLocaleString()} Revenue`,
     },
-  ];
+   ];
 
   const salesStatusData = [
     { name: 'Paid', value: stats?.paidSales || 0, amount: stats?.paidRevenue || 0 },
@@ -113,7 +120,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {statCards.map((stat) => (
           <div key={stat.name} className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">

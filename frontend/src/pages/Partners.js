@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { partnersAPI } from '../services/api';
+import { partnersAPI, investmentsAPI } from '../services/api';
 import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
   UserIcon,
   PhoneIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 export default function Partners() {
   const [partners, setPartners] = useState([]);
+  const [investments, setInvestments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
@@ -27,14 +29,29 @@ export default function Partners() {
   const fetchPartners = async () => {
     try {
       setLoading(true);
-      const response = await partnersAPI.getAll();
-      setPartners(response.data.partners);
+      const [partnersRes, investmentsRes] = await Promise.all([
+        partnersAPI.getAll(),
+        investmentsAPI.getAll(),
+      ]);
+      setPartners(partnersRes.data.partners);
+      setInvestments(investmentsRes.data.investments);
     } catch (error) {
       toast.error('Failed to load partners');
       console.error('Partners error:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculatePartnerTotalInvestment = (partnerId) => {
+    const partnerInvestments = investments.filter(inv => inv.partner_id === partnerId);
+    const totalInvestments = partnerInvestments
+      .filter(inv => inv.type === 'invest')
+      .reduce((sum, inv) => sum + parseFloat(inv.amount), 0);
+    const totalWithdrawals = partnerInvestments
+      .filter(inv => inv.type === 'withdraw')
+      .reduce((sum, inv) => sum + parseFloat(inv.amount), 0);
+    return totalInvestments - totalWithdrawals;
   };
 
   const handleSubmit = async (e) => {
@@ -138,28 +155,47 @@ export default function Partners() {
                         }`} />
                       </div>
                     </div>
-                    <div className="ml-4">
-                      <div className="flex items-center">
-                        <p className="text-sm font-medium text-gray-900">
-                          {partner.name}
-                        </p>
-                        <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          partner.type === 'investor' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {partner.type}
-                        </span>
-                      </div>
-                      {partner.phone_no && (
-                        <div className="flex items-center mt-1">
-                          <PhoneIcon className="h-4 w-4 text-gray-400 mr-1" />
-                          <p className="text-sm text-gray-500">{partner.phone_no}</p>
+                    <div className="ml-4 flex-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center">
+                            <p className="text-sm font-medium text-gray-900">
+                              {partner.name}
+                            </p>
+                            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              partner.type === 'investor' 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {partner.type}
+                            </span>
+                          </div>
+                          {partner.phone_no && (
+                            <div className="flex items-center mt-1">
+                              <PhoneIcon className="h-4 w-4 text-gray-400 mr-1" />
+                              <p className="text-sm text-gray-500">{partner.phone_no}</p>
+                            </div>
+                          )}
+                          <p className="text-xs text-gray-400">
+                            Created: {new Date(partner.created_at).toLocaleDateString()}
+                          </p>
                         </div>
-                      )}
-                      <p className="text-xs text-gray-400">
-                        Created: {new Date(partner.created_at).toLocaleDateString()}
-                      </p>
+                        {partner.type === 'investor' && (
+                          <div className="text-right">
+                            <div className="flex items-center">
+                              <CurrencyDollarIcon className="h-4 w-4 text-gray-400 mr-1" />
+                              <p className={`text-sm font-medium ${
+                                calculatePartnerTotalInvestment(partner.id) >= 0 
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                              }`}>
+                                RS {calculatePartnerTotalInvestment(partner.id).toLocaleString()}
+                              </p>
+                            </div>
+                            <p className="text-xs text-gray-400">Total Investment</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
