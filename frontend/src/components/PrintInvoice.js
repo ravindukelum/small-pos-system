@@ -74,46 +74,116 @@ const PrintInvoice = ({ sale, onClose }) => {
             font-family: 'Courier New', monospace;
             font-size: 12px;
             line-height: 1.3;
-          }
-          body * {
-            visibility: hidden;
-          }
-          .print-area, .print-area * {
-            visibility: visible;
-          }
-          .print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+            color: black;
             background: white;
+            width: 100%;
           }
           .no-print {
             display: none !important;
           }
+          .print-area {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            background: white !important;
+            color: black !important;
+          }
           .receipt {
-            width: 80mm;
-            max-width: 80mm;
-            margin: 0 auto;
-            padding: 5mm;
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 8px;
             font-family: 'Courier New', monospace;
             font-size: 11px;
             line-height: 1.2;
             color: black;
             background: white;
+            position: relative;
           }
           .receipt h1 {
-            font-size: 14px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 5px;
           }
           .receipt .dashed-line {
             border-bottom: 1px dashed #000;
-            margin: 3px 0;
+            margin: 5px 0;
           }
           .receipt .total-line {
             font-weight: bold;
-            font-size: 12px;
+            font-size: 16px;
+          }
+          .receipt table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+          .receipt th, .receipt td {
+            font-size: 10px;
+            padding: 1px;
+            vertical-align: top;
+          }
+          .receipt th:nth-child(1), .receipt td:nth-child(1) {
+            width: 45%;
+            text-align: left;
+          }
+          .receipt th:nth-child(2), .receipt td:nth-child(2) {
+            width: 12%;
+            text-align: center;
+          }
+          .receipt th:nth-child(3), .receipt td:nth-child(3) {
+            width: 21%;
+            text-align: right;
+          }
+          .receipt th:nth-child(4), .receipt td:nth-child(4) {
+            width: 22%;
+            text-align: right;
+          }
+          .receipt img {
+            max-height: 50px;
+            max-width: 100px;
+            object-fit: contain;
+            margin: 0 auto 8px auto;
+            display: block;
+          }
+          .receipt .watermark {
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) rotate(-45deg) !important;
+            opacity: 0.15 !important;
+            z-index: 1 !important;
+            pointer-events: none !important;
+            max-width: 150px !important;
+            max-height: 150px !important;
+            display: block !important;
+          }
+          .receipt .text-watermark {
+            font-size: 24px !important;
+            font-weight: bold !important;
+            color: #000 !important;
+            white-space: nowrap !important;
+            text-align: center !important;
+          }
+          .receipt .content {
+            position: relative;
+            z-index: 10;
+          }
+          .receipt .flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin: 1px 0;
+          }
+          .receipt .flex span:first-child {
+            flex: 1;
+            text-align: left;
+          }
+          .receipt .flex span:last-child {
+            flex: 0 0 auto;
+            text-align: right;
+            margin-left: 8px;
+            white-space: nowrap;
           }
         }
       `}</style>
@@ -140,9 +210,39 @@ const PrintInvoice = ({ sale, onClose }) => {
           ) : (
           <div className="print-area">
             <div className="receipt bg-white p-4 border border-gray-200 rounded">
-              {/* Header */}
-              <div className="text-center mb-4">
-                <h1 className="text-lg font-bold">{settings?.shopName || 'SMALL POS SYSTEM'}</h1>
+              {/* Watermark */}
+              {settings?.shopLogoUrl ? (
+                <img 
+                  src={settings.shopLogoUrl} 
+                  alt="Watermark" 
+                  className="watermark"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="watermark text-watermark">
+                  {settings?.shopName || 'INVOICE'}
+                </div>
+              )}
+              
+              <div className="content">
+                {/* Header */}
+                <div className="text-center mb-4">
+                  <h1 className="text-xl font-bold mb-2">INVOICE</h1>
+                {settings?.shopLogoUrl && (
+                  <div className="mb-2">
+                    <img 
+                      src={settings.shopLogoUrl} 
+                      alt="Shop Logo" 
+                      className="mx-auto max-h-16 max-w-32 object-contain"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+                <h2 className="text-lg font-bold">{settings?.shopName || 'SMALL POS SYSTEM'}</h2>
                 {settings?.shopPhone && (
                   <p className="text-xs">Phone: {settings.shopPhone}</p>
                 )}
@@ -276,6 +376,7 @@ const PrintInvoice = ({ sale, onClose }) => {
                   </div>
                 )}
                 <p className="mt-2">Powered by {settings?.shopName || 'Small POS System'}</p>
+              </div>
               </div>
             </div>
           </div>

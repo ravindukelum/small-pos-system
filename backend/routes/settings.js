@@ -27,6 +27,7 @@ const initializeSettingsTable = async () => {
       shopCity VARCHAR(100) DEFAULT '',
       shopState VARCHAR(100) DEFAULT '',
       shopZipCode VARCHAR(20) DEFAULT '',
+      shopLogoUrl VARCHAR(500) DEFAULT '',
       taxRate DECIMAL(5,2) DEFAULT 0,
       currency VARCHAR(10) DEFAULT 'USD',
       warrantyPeriod INT DEFAULT 30,
@@ -38,16 +39,27 @@ const initializeSettingsTable = async () => {
       updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )`);
 
+    // Add shopLogoUrl column if it doesn't exist (for existing tables)
+    try {
+      await connection.execute(`ALTER TABLE settings ADD COLUMN shopLogoUrl VARCHAR(500) DEFAULT '' AFTER shopZipCode`);
+      console.log('shopLogoUrl column added successfully');
+    } catch (error) {
+      // Column might already exist, ignore the error
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Error adding shopLogoUrl column:', error);
+      }
+    }
+
     // Check if settings exist, if not insert default
     const [rows] = await connection.execute('SELECT COUNT(*) as count FROM settings');
     
     if (rows[0].count === 0) {
       await connection.execute(`INSERT INTO settings (
-        shopName, shopPhone, shopEmail, shopAddress, shopCity, shopState, shopZipCode,
+        shopName, shopPhone, shopEmail, shopAddress, shopCity, shopState, shopZipCode, shopLogoUrl,
         taxRate, currency, warrantyPeriod, warrantyTerms, receiptFooter,
         businessRegistration, taxId
       ) VALUES (
-        'My POS Shop', '', '', '', '', '', '',
+        'My POS Shop', '', '', '', '', '', '', '',
         0, 'USD', 30, 'Standard warranty terms apply. Items must be returned in original condition.',
         'Thank you for your business!', '', ''
       )`);
@@ -82,6 +94,7 @@ router.get('/', async (req, res) => {
         shopCity: '',
         shopState: '',
         shopZipCode: '',
+        shopLogoUrl: '',
         taxRate: 0,
         currency: 'USD',
         warrantyPeriod: 30,
@@ -116,6 +129,7 @@ router.put('/', async (req, res) => {
       shopCity,
       shopState,
       shopZipCode,
+      shopLogoUrl,
       taxRate,
       currency,
       warrantyPeriod,
@@ -147,12 +161,12 @@ router.put('/', async (req, res) => {
       // Update existing settings
       const updateQuery = `UPDATE settings SET 
         shopName = ?, shopPhone = ?, shopEmail = ?, shopAddress = ?, shopCity = ?, 
-        shopState = ?, shopZipCode = ?, taxRate = ?, currency = ?, warrantyPeriod = ?,
+        shopState = ?, shopZipCode = ?, shopLogoUrl = ?, taxRate = ?, currency = ?, warrantyPeriod = ?,
         warrantyTerms = ?, receiptFooter = ?, businessRegistration = ?, taxId = ?
         WHERE id = ?`;
       
       await connection.execute(updateQuery, [
-        shopName, shopPhone, shopEmail, shopAddress, shopCity, shopState, shopZipCode,
+        shopName, shopPhone, shopEmail, shopAddress, shopCity, shopState, shopZipCode, shopLogoUrl,
         taxRate, currency, warrantyPeriod, warrantyTerms, receiptFooter,
         businessRegistration, taxId, existingRows[0].id
       ]);
@@ -163,13 +177,13 @@ router.put('/', async (req, res) => {
     } else {
       // Insert new settings
       const insertQuery = `INSERT INTO settings (
-        shopName, shopPhone, shopEmail, shopAddress, shopCity, shopState, shopZipCode,
+        shopName, shopPhone, shopEmail, shopAddress, shopCity, shopState, shopZipCode, shopLogoUrl,
         taxRate, currency, warrantyPeriod, warrantyTerms, receiptFooter,
         businessRegistration, taxId
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       
       const [result] = await connection.execute(insertQuery, [
-        shopName, shopPhone, shopEmail, shopAddress, shopCity, shopState, shopZipCode,
+        shopName, shopPhone, shopEmail, shopAddress, shopCity, shopState, shopZipCode, shopLogoUrl,
         taxRate, currency, warrantyPeriod, warrantyTerms, receiptFooter,
         businessRegistration, taxId
       ]);

@@ -20,6 +20,7 @@ const Settings = () => {
     shopCity: '',
     shopState: '',
     shopZipCode: '',
+    shopLogoUrl: '',
     taxRate: '',
     currency: 'USD',
     warrantyPeriod: '30',
@@ -181,6 +182,23 @@ const Settings = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter registration number"
               />
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Shop Logo URL
+              </label>
+              <input
+                type="url"
+                name="shopLogoUrl"
+                value={settings.shopLogoUrl}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter logo image URL (e.g., https://example.com/logo.png)"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Enter a direct URL to your shop logo image. This will be displayed on printed invoices.
+              </p>
             </div>
           </div>
         </div>
