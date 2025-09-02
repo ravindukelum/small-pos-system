@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const Database = require('./database/db');
+
 require('dotenv').config();
 
 const app = express();
@@ -17,7 +18,10 @@ database.initialize().then(() => {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -26,7 +30,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'POS System API Server is running!' });
 });
 
-// Import route modules
+// Import routes
 const partnerRoutes = require('./routes/partners');
 const investmentRoutes = require('./routes/investments');
 const inventoryRoutes = require('./routes/inventory');
@@ -57,9 +61,6 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-app.use(cors({
-  origin: ['https://pos.sciwithtech.com/', 'http://localhost:3000'],
-  credentials: true
-}));
+
 
 module.exports = app;
