@@ -57,4 +57,9 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
+app.use(cors({
+  origin: ['https://pos.sciwithtech.com/', 'http://localhost:3000'],
+  credentials: true
+}));
+
 module.exports = app;

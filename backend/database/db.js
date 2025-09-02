@@ -1,12 +1,13 @@
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 // Create database connection
 const dbConfig = {
-  host: 'localhost',
-  user: 'root',
-  password: 'root',
-  port: 3306,
-  database: 'pos_system'
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'root',
+  port: process.env.DB_PORT || 3306,
+  database: process.env.DB_NAME || 'pos_system'
 };
 
 let db;
@@ -22,7 +23,7 @@ const initializeDatabase = async () => {
       port: dbConfig.port
     });
     
-    await connection.execute('CREATE DATABASE IF NOT EXISTS pos_system');
+    await connection.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
     await connection.end();
     
     // Now connect to the database
