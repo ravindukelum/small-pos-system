@@ -9,9 +9,12 @@ import {
   ArrowDownIcon,
   XMarkIcon,
   CheckIcon,
-  EyeIcon
+  EyeIcon,
+  QrCodeIcon
 } from '@heroicons/react/24/outline';
 import { inventoryAPI } from '../services/api';
+import BarcodeScanner from '../components/BarcodeScanner';
+import QRCodeGenerator from '../components/QRCodeGenerator';
 
 const Inventory = () => {
   const [inventory, setInventory] = useState([]);
@@ -27,6 +30,7 @@ const Inventory = () => {
   const [sortOrder, setSortOrder] = useState('asc');
   const [selectedItems, setSelectedItems] = useState([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   
   const [formData, setFormData] = useState({
     item_name: '',
@@ -54,6 +58,29 @@ const Inventory = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBarcodeScanned = (scannedCode) => {
+    // Search for product by barcode, SKU, or item name
+    const foundItem = inventory.find(item => 
+      item.barcode === scannedCode || 
+      item.sku === scannedCode || 
+      item.item_name.toLowerCase().includes(scannedCode.toLowerCase())
+    );
+
+    if (foundItem) {
+      // Highlight the found item by setting search term
+      setSearchTerm(scannedCode);
+      // Optionally scroll to the item or show details
+      handleView(foundItem);
+      alert(`Product found: ${foundItem.item_name}`);
+    } else {
+      // If not found, set search term to allow manual search
+      setSearchTerm(scannedCode);
+      alert(`No product found with barcode: ${scannedCode}. You can add it as a new product.`);
+    }
+    
+    setShowBarcodeScanner(false);
   };
 
   const handleSubmit = async (e) => {
@@ -360,8 +387,15 @@ const Inventory = () => {
             placeholder="Search by name, SKU, category, or supplier..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            className="pl-10 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           />
+          <button
+            onClick={() => setShowBarcodeScanner(true)}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            title="Scan Barcode"
+          >
+            <QrCodeIcon className="h-5 w-5" />
+          </button>
         </div>
         
         <select
@@ -865,6 +899,20 @@ const Inventory = () => {
                   )}
                 </div>
 
+                {/* QR Code Section */}
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Product QR Code</h3>
+                  <QRCodeGenerator 
+                    productData={{
+                      id: viewingItem.id,
+                      name: viewingItem.item_name,
+                      sku: viewingItem.sku,
+                      price: viewingItem.sell_price,
+                      barcode: viewingItem.barcode
+                    }}
+                  />
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-2 pt-4">
                   <button
                     onClick={() => setShowViewModal(false)}
@@ -883,6 +931,32 @@ const Inventory = () => {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Barcode Scanner Modal */}
+      {showBarcodeScanner && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700 w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Scan Product Barcode
+              </h2>
+              <button
+                onClick={() => setShowBarcodeScanner(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-4">
+              <BarcodeScanner
+                onScan={handleBarcodeScanned}
+                onClose={() => setShowBarcodeScanner(false)}
+                isOpen={showBarcodeScanner}
+              />
             </div>
           </div>
         </div>

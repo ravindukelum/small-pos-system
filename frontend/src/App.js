@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
+import InstallPrompt from './components/InstallPrompt';
+import OfflineIndicator from './components/OfflineIndicator';
 import Dashboard from './pages/Dashboard';
 import Partners from './pages/Partners';
 import Investments from './pages/Investments';
@@ -14,7 +16,12 @@ import './App.css';
 function App() {
   return (
     <ThemeProvider>
-      <Router>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <div className="App">
           <Layout>
             <Routes>
@@ -43,6 +50,8 @@ function App() {
               },
             }}
           />
+          <InstallPrompt />
+          <OfflineIndicator />
         </div>
       </Router>
     </ThemeProvider>

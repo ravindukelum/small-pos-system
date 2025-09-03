@@ -7,10 +7,12 @@ import {
   PrinterIcon,
   XMarkIcon,
   MinusIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  QrCodeIcon
 } from '@heroicons/react/24/outline';
 import { salesAPI, inventoryAPI, settingsAPI } from '../services/api';
 import PrintInvoice from '../components/PrintInvoice';
+import BarcodeScanner from '../components/BarcodeScanner';
 
 const Sales = () => {
   const [sales, setSales] = useState([]);
@@ -23,6 +25,7 @@ const Sales = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [itemSearchTerm, setItemSearchTerm] = useState('');
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   
   // Cart state for new invoice
   const [cart, setCart] = useState([]);
@@ -91,6 +94,27 @@ const Sales = () => {
         alert('Item is out of stock');
       }
     }
+  };
+
+  const handleBarcodeScanned = (scannedCode) => {
+    // Search for product by barcode, SKU, or item name
+    const foundItem = inventory.find(item => 
+      item.barcode === scannedCode || 
+      item.sku === scannedCode || 
+      item.item_name.toLowerCase().includes(scannedCode.toLowerCase())
+    );
+
+    if (foundItem) {
+      // Add the found item to cart
+      addToCart(foundItem);
+      alert(`Product added to cart: ${foundItem.item_name}`);
+    } else {
+      // If not found, set search term to allow manual search
+      setItemSearchTerm(scannedCode);
+      alert(`No product found with barcode: ${scannedCode}. Please check the item list below.`);
+    }
+    
+    setShowBarcodeScanner(false);
   };
 
   const updateCartQuantity = (itemId, newQuantity) => {
@@ -470,11 +494,18 @@ const Sales = () => {
                   <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
-                    placeholder="Search items..."
+                    placeholder="Search items or scan barcode..."
                     value={itemSearchTerm}
                     onChange={(e) => setItemSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    className="pl-10 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
+                  <button
+                    onClick={() => setShowBarcodeScanner(true)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    title="Scan Barcode"
+                  >
+                    <QrCodeIcon className="h-5 w-5" />
+                  </button>
                 </div>
 
                 {/* Items List */}
@@ -755,6 +786,32 @@ const Sales = () => {
           sale={selectedSale} 
           onClose={() => setShowPrintModal(false)} 
         />
+      )}
+
+      {/* Barcode Scanner Modal */}
+      {showBarcodeScanner && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700 w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Scan Product Barcode
+              </h2>
+              <button
+                onClick={() => setShowBarcodeScanner(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-4">
+              <BarcodeScanner
+                onScan={handleBarcodeScanned}
+                onClose={() => setShowBarcodeScanner(false)}
+                isOpen={showBarcodeScanner}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
