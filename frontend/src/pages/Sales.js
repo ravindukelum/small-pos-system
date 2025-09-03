@@ -8,7 +8,8 @@ import {
   XMarkIcon,
   MinusIcon,
   CurrencyDollarIcon,
-  QrCodeIcon
+  QrCodeIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { salesAPI, inventoryAPI, settingsAPI } from '../services/api';
 import PrintInvoice from '../components/PrintInvoice';
@@ -21,6 +22,7 @@ const Sales = () => {
   const [showModal, setShowModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -41,6 +43,12 @@ const Sales = () => {
   
   // Payment modal state
   const [paymentAmount, setPaymentAmount] = useState(0);
+  
+  // WhatsApp modal state
+  const [whatsappPhone, setWhatsappPhone] = useState('');
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [whatsappResult, setWhatsappResult] = useState(null);
+  const [includePDF, setIncludePDF] = useState(false);
 
   useEffect(() => {
     fetchSales();
@@ -221,6 +229,47 @@ const Sales = () => {
     setShowPrintModal(true);
   };
 
+  const openWhatsAppModal = (sale) => {
+    setSelectedSale(sale);
+    setWhatsappPhone(sale.customer_phone || '');
+    setWhatsappResult(null);
+    setIncludePDF(false);
+    setShowWhatsAppModal(true);
+  };
+
+  const handleSendWhatsApp = async () => {
+    if (!whatsappPhone.trim()) {
+      alert('Please enter a phone number');
+      return;
+    }
+
+    setWhatsappLoading(true);
+    try {
+      const response = await salesAPI.sendWhatsApp(selectedSale.id, {
+        phone_number: whatsappPhone,
+        method: 'simple',
+        include_pdf: includePDF
+      });
+      
+      setWhatsappResult(response.data);
+      
+      if (response.data.whatsapp && response.data.whatsapp.success) {
+        // Open WhatsApp URL if available
+        if (response.data.whatsapp.whatsappUrl) {
+          window.open(response.data.whatsapp.whatsappUrl, '_blank');
+        }
+      }
+    } catch (error) {
+      console.error('Error sending WhatsApp invoice:', error);
+      setWhatsappResult({
+        success: false,
+        error: error.response?.data?.error || error.message
+      });
+    } finally {
+      setWhatsappLoading(false);
+    }
+  };
+
   const filteredSales = (sales || []).filter(sale => {
     const matchesSearch = sale.invoice.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (sale.customer_name && sale.customer_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -359,8 +408,15 @@ const Sales = () => {
                          <PrinterIcon className="h-5 w-5" />
                        </button>
                        <button
-                         onClick={() => openPaymentModal(sale)}
+                         onClick={() => openWhatsAppModal(sale)}
                          className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                         title="Send WhatsApp Invoice"
+                       >
+                         <ChatBubbleLeftRightIcon className="h-5 w-5" />
+                       </button>
+                       <button
+                         onClick={() => openPaymentModal(sale)}
+                         className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
                          title="Update Payment"
                        >
                          <CurrencyDollarIcon className="h-5 w-5" />
@@ -450,8 +506,15 @@ const Sales = () => {
                   <PrinterIcon className="h-5 w-5" />
                 </button>
                 <button
-                  onClick={() => openPaymentModal(sale)}
+                  onClick={() => openWhatsAppModal(sale)}
                   className="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                  title="Send WhatsApp Invoice"
+                >
+                  <ChatBubbleLeftRightIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => openPaymentModal(sale)}
+                  className="p-2 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:text-yellow-300 dark:hover:bg-yellow-900/20 rounded-lg transition-colors"
                   title="Update Payment"
                 >
                   <CurrencyDollarIcon className="h-5 w-5" />
@@ -809,6 +872,120 @@ const Sales = () => {
                 onClose={() => setShowBarcodeScanner(false)}
                 isOpen={showBarcodeScanner}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Modal */}
+      {showWhatsAppModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl dark:shadow-gray-700 w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Send WhatsApp Invoice
+              </h2>
+              <button
+                onClick={() => setShowWhatsAppModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-4">
+              {selectedSale && (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                    <h3 className="font-medium text-gray-900 dark:text-white mb-2">
+                      Invoice: {selectedSale.invoice}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Customer: {selectedSale.customer_name || 'Walk-in Customer'}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Total: RS {parseFloat(selectedSale.total_amount).toFixed(2)}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={whatsappPhone}
+                      onChange={(e) => setWhatsappPhone(e.target.value)}
+                      placeholder="Enter phone number (e.g., 0771234567)"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="includePDF"
+                      checked={includePDF}
+                      onChange={(e) => setIncludePDF(e.target.checked)}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                    />
+                    <label htmlFor="includePDF" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      Generate PDF Invoice
+                    </label>
+                  </div>
+                  
+                  {whatsappResult && (
+                    <div className={`p-3 rounded-lg ${
+                      whatsappResult.success 
+                        ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                        : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'
+                    }`}>
+                      <p className="text-sm font-medium">
+                        {whatsappResult.success ? '✅ Success!' : '❌ Error'}
+                      </p>
+                      <p className="text-sm mt-1">
+                        {whatsappResult.message || whatsappResult.error}
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        {whatsappResult.whatsapp && whatsappResult.whatsapp.whatsappUrl && (
+                          <button
+                            onClick={() => window.open(whatsappResult.whatsapp.whatsappUrl, '_blank')}
+                            className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors"
+                          >
+                            Open WhatsApp
+                          </button>
+                        )}
+                        {whatsappResult.whatsapp && whatsappResult.whatsapp.pdfPath && (
+                          <button
+                            onClick={() => {
+                              const filename = whatsappResult.whatsapp.pdfPath.split('/').pop();
+                              window.open(`http://localhost:3001/api/sales/pdf/${filename}`, '_blank');
+                            }}
+                            className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                          >
+                            Download PDF
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowWhatsAppModal(false)}
+                      className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSendWhatsApp}
+                      disabled={whatsappLoading || !whatsappPhone.trim()}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {whatsappLoading ? 'Sending...' : 'Send Invoice'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

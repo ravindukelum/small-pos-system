@@ -1,7 +1,11 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const database = require('../database/db');
+const WhatsAppService = require('../services/whatsapp');
 const router = express.Router();
+
+// Initialize WhatsApp service
+const whatsappService = new WhatsAppService();
 
 // Create database instance
 const dbInstance = new database();
@@ -245,27 +249,112 @@ router.post('/', async (req, res) => {
     
     await db.commit();
     
+    const saleData = {
+      id: saleId,
+      invoice,
+      date: saleDate,
+      customer_name,
+      customer_phone,
+      subtotal,
+      tax_amount: taxAmount,
+      discount_amount,
+      total_amount: totalAmount,
+      paid_amount,
+      status,
+      items: processedItems
+    };
+    
+    // Send WhatsApp invoice if customer phone is provided
+    let whatsappResult = null;
+    if (customer_phone) {
+      try {
+        whatsappResult = await whatsappService.sendInvoice(customer_phone, saleData);
+        console.log('WhatsApp invoice result:', whatsappResult);
+      } catch (error) {
+        console.error('Failed to send WhatsApp invoice:', error);
+        // Don't fail the sale if WhatsApp sending fails
+      }
+    }
+    
     res.status(201).json({
       message: 'Sale created successfully',
-      sale: {
-        id: saleId,
-        invoice,
-        date: saleDate,
-        customer_name,
-        customer_phone,
-        subtotal,
-        tax_amount: taxAmount,
-        discount_amount,
-        total_amount: totalAmount,
-        paid_amount,
-        status,
-        items: processedItems
-      }
+      sale: saleData,
+      whatsapp: whatsappResult
     });
   } catch (err) {
     await db.rollback();
     res.status(500).json({ error: err.message });
   }
+});
+
+// Send WhatsApp invoice for existing sale
+router.post('/:id/send-whatsapp', async (req, res) => {
+  const { phone_number, method = 'simple', include_pdf = false } = req.body;
+  
+  if (!phone_number) {
+    res.status(400).json({ error: 'Phone number is required' });
+    return;
+  }
+  
+  try {
+    // Get sale with items
+    const saleSql = 'SELECT * FROM sales WHERE id = ?';
+    const [saleRows] = await db.execute(saleSql, [req.params.id]);
+    const sale = saleRows[0];
+    
+    if (!sale) {
+      res.status(404).json({ error: 'Sale not found' });
+      return;
+    }
+    
+    // Get sale items
+    const itemsSql = 'SELECT * FROM sales_items WHERE sale_id = ? ORDER BY created_at';
+    const [items] = await db.execute(itemsSql, [sale.id]);
+    
+    const saleData = {
+      ...sale,
+      items: items
+    };
+    
+    // Send WhatsApp invoice
+    const whatsappResult = await whatsappService.sendInvoice(phone_number, saleData, method, include_pdf);
+    
+    if (whatsappResult.success) {
+      res.json({
+        message: 'WhatsApp invoice sent successfully',
+        whatsapp: whatsappResult
+      });
+    } else {
+      res.status(500).json({
+        error: 'Failed to send WhatsApp invoice',
+        details: whatsappResult.error
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Serve PDF files
+router.get('/pdf/:filename', (req, res) => {
+  const path = require('path');
+  const fs = require('fs');
+  
+  const filename = req.params.filename;
+  const filepath = path.join(__dirname, '../uploads', filename);
+  
+  // Check if file exists
+  if (!fs.existsSync(filepath)) {
+    return res.status(404).json({ error: 'PDF file not found' });
+  }
+  
+  // Set headers for PDF download
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  
+  // Stream the file
+  const fileStream = fs.createReadStream(filepath);
+  fileStream.pipe(res);
 });
 
 // Update sale status and payment

@@ -71,6 +71,7 @@ export const salesAPI = {
   update: (id, data) => api.put(`/sales/${id}`, data),
   updateStatus: (id, data) => api.patch(`/sales/${id}/status`, data),
   updatePayment: (id, data) => api.patch(`/sales/${id}/payment`, data),
+  sendWhatsApp: (id, data) => api.post(`/sales/${id}/send-whatsapp`, data),
   delete: (id) => api.delete(`/sales/${id}`),
 };
 
@@ -84,6 +85,16 @@ export const dashboardAPI = {
   },
   getTopSellingItems: (limit = 10) => api.get(`/dashboard/top-selling-items?limit=${limit}`),
   getLowStockAlerts: (threshold = 5) => api.get(`/dashboard/low-stock-alerts?threshold=${threshold}`),
+};
+
+// Returns API
+export const returnsAPI = {
+  getAll: () => api.get('/returns'),
+  getById: (id) => api.get(`/returns/${id}`),
+  getBySale: (saleId) => api.get(`/returns/sale/${saleId}`),
+  create: (data) => api.post('/returns', data),
+  update: (id, data) => api.put(`/returns/${id}`, data),
+  delete: (id) => api.delete(`/returns/${id}`),
 };
 
 // Settings API

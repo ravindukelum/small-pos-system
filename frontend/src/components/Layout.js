@@ -6,6 +6,8 @@ import {
   CurrencyDollarIcon,
   CubeIcon,
   ShoppingCartIcon,
+  ArrowUturnLeftIcon,
+  DocumentTextIcon,
   CogIcon,
   Bars3Icon,
   XMarkIcon,
@@ -21,6 +23,8 @@ const navigation = [
   { name: 'Investments', href: '/investments', icon: CurrencyDollarIcon },
   { name: 'Inventory', href: '/inventory', icon: CubeIcon },
   { name: 'Sales', href: '/sales', icon: ShoppingCartIcon },
+  { name: 'Returns', href: '/returns', icon: ArrowUturnLeftIcon },
+  { name: 'Receipt Templates', href: '/receipt-templates', icon: DocumentTextIcon },
   { name: 'Settings', href: '/settings', icon: CogIcon },
 ];
 

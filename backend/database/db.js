@@ -285,6 +285,33 @@ class Database {
       
       await this.executeQuery(salesItemsTableSQL);
 
+      // Returns table
+      const returnsTableSQL = isPostgreSQL ? `
+        CREATE TABLE IF NOT EXISTS returns (
+          id SERIAL PRIMARY KEY,
+          sale_id INT NOT NULL,
+          reason VARCHAR(255) NOT NULL,
+          refund_amount DECIMAL(10,2) NOT NULL,
+          items_data TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE
+        )
+      ` : `
+        CREATE TABLE IF NOT EXISTS returns (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          sale_id INT NOT NULL,
+          reason VARCHAR(255) NOT NULL,
+          refund_amount DECIMAL(10,2) NOT NULL,
+          items_data TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (sale_id) REFERENCES sales (id) ON DELETE CASCADE
+        )
+      `;
+      
+      await this.executeQuery(returnsTableSQL);
+
       console.log('Database tables initialized.');
     } catch (err) {
       console.error('Error creating tables:', err);

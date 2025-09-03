@@ -35,6 +35,7 @@ const partnerRoutes = require('./routes/partners');
 const investmentRoutes = require('./routes/investments');
 const inventoryRoutes = require('./routes/inventory');
 const salesRoutes = require('./routes/sales');
+const returnsRoutes = require('./routes/returns');
 const dashboardRoutes = require('./routes/dashboard');
 const settingsRoutes = require('./routes/settings');
 
@@ -43,6 +44,7 @@ app.use('/api/partners', partnerRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/sales', salesRoutes);
+app.use('/api/returns', returnsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 
